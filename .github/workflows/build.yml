@@ -30,8 +30,6 @@ jobs:
       - name: Setup kernel config
         working-directory: ./kernel
         run: |
-          if [ -f ../config ]; then
-            cp ../config .config
             make olddefconfig
 
       - name: Apply SukiSU patch
