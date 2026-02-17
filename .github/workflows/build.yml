@@ -1,0 +1,60 @@
+name: Build Kernel with SukiSU-Ultra
+
+on:
+  workflow_dispatch: 
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout kernel source
+        uses: actions/checkout@v4
+        with:
+          repository: LineageOS/android_kernel_xiaomi_gauguin
+          path: kernel
+          fetch-depth: 1
+
+      - name: Checkout SukiSU-Ultra
+        uses: actions/checkout@v4
+        with:
+          repository: SukiSU-Ultra/SukiSU-Ultra
+          path: SukiSU
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y git clang llvm lld make gcc-aarch64-linux-gnu \
+            binutils-aarch64-linux-gnu flex bison libncurses-dev libssl-dev bc
+
+      - name: Setup kernel config
+        working-directory: ./kernel
+        run: |
+          if [ -f ../config ]; then
+            cp ../config .config
+            make olddefconfig
+
+      - name: Apply SukiSU patch
+        working-directory: ./kernel
+        run: |
+          ../SukiSU/kernel/setup.sh --kernel-path $PWD
+         
+          echo "CONFIG_KSU=y" >> .config
+          echo "CONFIG_KSU_KPM=y" >> .config
+          make olddefconfig
+
+      - name: Build kernel
+        working-directory: ./kernel
+        run: |
+          export ARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CC=clang
+          make -j$(nproc)
+
+      - name: Upload kernel image
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-with-sukisu
+          path: |
+            kernel/arch/arm64/boot/Image*
+            kernel/drivers/kernelsu/*.ko
