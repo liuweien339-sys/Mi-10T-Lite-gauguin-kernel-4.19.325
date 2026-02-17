@@ -47,7 +47,7 @@ jobs:
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CC=clang
-          make -j$(nproc)
+          make -i -k -j$(nproc)
 
       - name: Upload kernel image
         uses: actions/upload-artifact@v4
